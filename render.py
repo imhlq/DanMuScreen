@@ -12,7 +12,7 @@ class App(QWidget):
     def __init__(self):
         super().__init__()
         self.title = 'Danmu Screen'
-        self.DamMu = []
+        self.DanMu = []
         self.initUI()
 
     def initUI(self):
@@ -31,7 +31,7 @@ class App(QWidget):
         # Render Text
         self.Styles = {}
         for sty in self.StyleList:
-            self.Styles[sty.name] = "font-family:{}; font-size: {}pt; color: rgba({},{},{},{});".format(sty.fontname, sty.fontsize, sty.primary_color.r, sty.primary_color.g, sty.primary_color.b, sty.primary_color.a)
+            self.Styles[sty.name] = "font-family:{}; font-size: {}pt; color: rgba({},{},{},{});".format(sty.fontname, sty.fontsize*0.8, sty.primary_color.r, sty.primary_color.g, sty.primary_color.b, sty.primary_color.a)
 
         # Go run
         self.t0 = time.time()
@@ -54,10 +54,12 @@ class App(QWidget):
 
     def sendOne(self, danmu):
         # Danmu: ass.event
+        TOP_Margin = - 50
+        IN_Margin = 0.7
+        #
         dura = (danmu.end - danmu.start).seconds * 1000
         sty = danmu.style
         text = "".join(danmu.text.split('}')[1:])
-        print(text)
 
         fontMetrics = QFontMetrics(QFont('Microsoft YaHei UI', 25))
         fontwidth = fontMetrics.width(text)
@@ -65,9 +67,9 @@ class App(QWidget):
         if sty == 'R2L':
             pos = re.findall(r"([-]?[0-9]{1,}[.]?[0-9]*)", danmu.text)[0:4]
             startX = self.screen.width() + float(pos[0]) - self.playxy[0]
-            startY = float(pos[1]) * (self.screen.height() / self.playxy[1])
+            startY = float(pos[1]) * (self.screen.height() / self.playxy[1]) * IN_Margin + TOP_Margin
             endX = - fontwidth
-            endY = float(pos[3]) * (self.screen.height() / self.playxy[1])
+            endY = float(pos[3]) * (self.screen.height() / self.playxy[1]) * IN_Margin + TOP_Margin
         else:
             pos = re.findall(r"([-]?[0-9]{1,}[.]?[0-9]*)", danmu.text)[0:2]
             startX = (self.screen.width() - fontwidth) / 2
@@ -77,17 +79,20 @@ class App(QWidget):
 
         newD = QLabel(text, self)
         newD.setStyleSheet(self.Styles[sty])
+        newD.show() # NB
         self.fly(newD, dura, (startX,startY), (endX, endY))
 
 
     def fly(self, label, duration, sv, ev):
         anim = QPropertyAnimation(label, b"pos")
-        self.DamMu.append(anim)
-        self.DamMu[-1].setDuration(duration)
-        self.DamMu[-1].setStartValue(QPoint(*sv))
-        self.DamMu[-1].setEndValue(QPoint(*ev))
-        self.DamMu[-1].setEasingCurve(QEasingCurve.Linear)
-        self.DamMu[-1].start()
+        did = len(self.DanMu)
+        self.DanMu.append(anim)
+        self.DanMu[did].setDuration(duration)
+        self.DanMu[did].setStartValue(QPoint(*sv))
+        self.DanMu[did].setEndValue(QPoint(*ev))
+        self.DanMu[did].setEasingCurve(QEasingCurve.Linear)
+        self.DanMu[did].start()
+        
 
 
 
@@ -97,14 +102,15 @@ class App(QWidget):
         elps = now - self.t0
         waitTime = self.Danmulist[self.currentDanMuID].start.total_seconds()
         while elps >= waitTime:
+
             self.sendOne(self.Danmulist[self.currentDanMuID])
             self.currentDanMuID += 1
             waitTime = self.Danmulist[self.currentDanMuID].start.total_seconds()
             print(self.currentDanMuID, waitTime)
-            self.show()
 
 
 if __name__ == "__main__":
     app = QApplication([])
     ex = App()
+    ex.show()
     app.exec_()
