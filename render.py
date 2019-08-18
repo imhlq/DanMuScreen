@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QApplication, QWidget, QLabel,
  QFileDialog, QDesktopWidget, QVBoxLayout)
-from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve, QObject, pyqtSignal, QTimer
+from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve, QObject, QTimer, pyqtSignal
 from PyQt5.QtGui import QFont, QFontMetrics
 import time, threading
 import danmu
@@ -20,6 +20,7 @@ class App(QWidget):
         self.setWindowTitle(self.title)
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         self.screen = QDesktopWidget().screenGeometry()
         self.resize(self.screen.width(), self.screen.height())
 
@@ -34,6 +35,7 @@ class App(QWidget):
             self.Styles[sty.name] = "font-family:{}; font-size: {}pt; color: rgba({},{},{},{});".format(sty.fontname, sty.fontsize*0.8, sty.primary_color.r, sty.primary_color.g, sty.primary_color.b, sty.primary_color.a)
 
         # Go run
+        self.shiftTime = 0 # in sec
         self.t0 = time.time()
         self.currentDanMuID = 0
 
@@ -78,6 +80,8 @@ class App(QWidget):
             endY = startY
 
         newD = QLabel(text, self)
+        newD.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        
         newD.setStyleSheet(self.Styles[sty])
         newD.show() # NB
         self.fly(newD, dura, (startX,startY), (endX, endY))
@@ -92,21 +96,30 @@ class App(QWidget):
         self.DanMu[did].setEndValue(QPoint(*ev))
         self.DanMu[did].setEasingCurve(QEasingCurve.Linear)
         self.DanMu[did].start()
-        
 
+        self.DanMu[did].finished.connect(label.deleteLater)
 
 
 
     def tick(self):
         now = time.time()
-        elps = now - self.t0
+        elps = now - self.t0 + self.shiftTime
         waitTime = self.Danmulist[self.currentDanMuID].start.total_seconds()
         while elps >= waitTime:
-
             self.sendOne(self.Danmulist[self.currentDanMuID])
             self.currentDanMuID += 1
             waitTime = self.Danmulist[self.currentDanMuID].start.total_seconds()
-            print(self.currentDanMuID, waitTime)
+            # print(self.currentDanMuID, waitTime)
+
+
+    def keyPressEvent(self, event):
+        super(App, self).keyPressEvent(event)
+        if event.text()== ',':
+            self.currentDanMuID = max(self.currentDanMuID - 3, 0)
+            self.shiftTime -= 1
+        elif event.text() == '.':
+            self.currentDanMuID = min(self.currentDanMuID + 3, 99999)
+            self.shiftTime += 1
 
 
 if __name__ == "__main__":
