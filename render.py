@@ -26,13 +26,8 @@ class App(QWidget):
 
         # Read Ass File
         fname = self.openFileNameDialog()
-        self.StyleList, self.Danmulist, self.playxy = danmu.readAss(fname)
-        print(len(self.Danmulist))
-
-        # Render Text
-        self.Styles = {}
-        for sty in self.StyleList:
-            self.Styles[sty.name] = "font-family:{}; font-size: {}pt; color: rgba({},{},{},{});".format(sty.fontname, sty.fontsize*0.8, sty.primary_color.r, sty.primary_color.g, sty.primary_color.b, sty.primary_color.a)
+        self.StyleList, self.DanmuList = danmu.readAss(fname)
+        print(len(self.DanmuList))
 
         # Go run
         self.shiftTime = 0 # in sec
@@ -40,7 +35,7 @@ class App(QWidget):
         self.currentDanMuID = 0
 
         # for i in range(5):
-        #     self.sendOne(self.Danmulist[i])
+        #     self.sendOne(self.DanmuList[i])
         # self.tick()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
@@ -56,33 +51,29 @@ class App(QWidget):
 
     def sendOne(self, danmu):
         # Danmu: ass.event
-        TOP_Margin = - 50
-        IN_Margin = 0.7
+        TOP_MARGIN = - 50
+        IN_MARGIN = 0.7
         #
-        dura = (danmu.end - danmu.start).seconds * 1000
-        sty = danmu.style
-        text = "".join(danmu.text.split('}')[1:])
+        dura = (danmu.end - danmu.start) * 1000
 
-        fontMetrics = QFontMetrics(QFont('Microsoft YaHei UI', 25))
-        fontwidth = fontMetrics.width(text)
-
-        if sty == 'R2L':
-            pos = re.findall(r"([-]?[0-9]{1,}[.]?[0-9]*)", danmu.text)[0:4]
-            startX = self.screen.width() + float(pos[0]) - self.playxy[0]
-            startY = float(pos[1]) * (self.screen.height() / self.playxy[1]) * IN_Margin + TOP_Margin
-            endX = - fontwidth
-            endY = float(pos[3]) * (self.screen.height() / self.playxy[1]) * IN_Margin + TOP_Margin
-        else:
-            pos = re.findall(r"([-]?[0-9]{1,}[.]?[0-9]*)", danmu.text)[0:2]
-            startX = (self.screen.width() - fontwidth) / 2
-            startY = float(pos[1]) * (self.screen.height() / self.playxy[1])
-            endX = startX
-            endY = startY
-
-        newD = QLabel(text, self)
-        newD.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        fontMetrics = QFontMetrics(QFont(danmu.fontname, danmu.fontsize))
+        fontwidth = fontMetrics.width(danmu.text)
+        fontheight = fontMetrics.height()
         
-        newD.setStyleSheet(self.Styles[sty])
+        startX = danmu.startX * self.screen.width() - fontwidth / 2
+        endX = danmu.endX * self.screen.width() - fontwidth / 2
+
+        if danmu.type != 3:
+            startY = danmu.startY * self.screen.height() * IN_MARGIN + TOP_MARGIN
+            endY = danmu.endY * self.screen.height() * IN_MARGIN + TOP_MARGIN
+        else:
+            startY = danmu.startY * self.screen.height()
+            endY = danmu.endY * self.screen.height()
+
+
+        newD = QLabel(danmu.text, self)
+        newD.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        newD.setStyleSheet("font-family:{}; font-size: {}pt; color: {};".format(danmu.fontname, danmu.fontsize, danmu.color))
         newD.show() # NB
         self.fly(newD, dura, (startX,startY), (endX, endY))
 
@@ -104,23 +95,35 @@ class App(QWidget):
     def tick(self):
         now = time.time()
         elps = now - self.t0 + self.shiftTime
-        waitTime = self.Danmulist[self.currentDanMuID].start.total_seconds()
+        waitTime = self.DanmuList[self.currentDanMuID].start
         while elps >= waitTime:
-            self.sendOne(self.Danmulist[self.currentDanMuID])
+            self.sendOne(self.DanmuList[self.currentDanMuID])
             self.currentDanMuID += 1
-            waitTime = self.Danmulist[self.currentDanMuID].start.total_seconds()
-            # print(self.currentDanMuID, waitTime)
+            waitTime = self.DanmuList[self.currentDanMuID].start
+            print(self.currentDanMuID, waitTime)
 
 
     def keyPressEvent(self, event):
         super(App, self).keyPressEvent(event)
         if event.text()== ',':
-            self.currentDanMuID = max(self.currentDanMuID - 3, 0)
-            self.shiftTime -= 1
-        elif event.text() == '.':
-            self.currentDanMuID = min(self.currentDanMuID + 3, 99999)
-            self.shiftTime += 1
+            if self.currentDanMuID > 5:
+                self.shiftTime -= 2
+                now = self.DanmuList[self.currentDanMuID].start
+                while now - self.DanmuList[self.currentDanMuID-3] < 2:
+                    self.DanMu.remove(self.DanMu[-1])
+                    self.DanMu.remove(self.DanMu[-2])
+                    self.DanMu.remove(self.DanMu[-3])
+                    self.currentDanMuID -= 3
 
+        elif event.text() == '.':
+            self.shiftTime += 2
+            now = self.DanmuList[self.currentDanMuID].start
+            while self.DanmuList[self.currentDanMuID+5].start - now < 2:
+                self.currentDanMuID += 5
+
+        elif event.key() == Qt.Key_Space:
+            self.currentDanMuID = 4290
+            self.shiftTime = self.DanmuList[self.currentDanMuID].start
 
 if __name__ == "__main__":
     app = QApplication([])
