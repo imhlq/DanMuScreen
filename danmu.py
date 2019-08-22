@@ -19,8 +19,8 @@ class DanMu:
             self.color = self.color_format(evt.text[cind: cind+10])
         else:
             # Default
-            self.color = '#FFFFFF'
-            #self.color = (255, 255, 255, 0.6)
+            #self.color = '#FFFFFF'
+            self.color = 'rgba(255, 255, 255, 0.8)'
         self.fontname = 'Microsoft YaHei UI'
         self.fontsize = 20
 
@@ -59,8 +59,8 @@ class DanMu:
         bb = hexd[0:2]
         gg = hexd[2:4]
         rr = hexd[4:6]
-        return '#' + rr + gg + bb
-        #return (int(rr, 16), int(gg, 16), int(bb, 16), 0.6)
+        #return '#' + rr + gg + bb
+        return 'rgba(%d, %d, %d, %.2f)' % (int(rr, 16), int(gg, 16), int(bb, 16), 0.8)
 
 
 def readAss(fname):

@@ -73,7 +73,7 @@ class App(QWidget):
 
         newD = QLabel(danmu.text, self)
         newD.setAttribute(Qt.WA_TransparentForMouseEvents, True)
-        newD.setStyleSheet("font-family:{}; font-size: {}pt; color: {};".format(danmu.fontname, danmu.fontsize, danmu.color))
+        newD.setStyleSheet("font-family:{}; font-size: {}pt; color: {};opacity:0;".format(danmu.fontname, danmu.fontsize, danmu.color))
         newD.show() # NB
         self.fly(newD, dura, (startX,startY), (endX, endY))
 
