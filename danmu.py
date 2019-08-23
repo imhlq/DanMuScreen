@@ -3,6 +3,7 @@ import re
 # Use https://github.com/chireiden/python-ass
 
 
+
 class DanMu:
     # Create Danmu by Ass event
     def createByAss(self, evt, play_res_x, play_res_y):
@@ -64,18 +65,23 @@ class DanMu:
 
 
 def readAss(fname):
-    assert str(fname).endswith('.ass')
+    if str(fname).endswith('.ass'):
 
-    with open(fname, 'r') as f:
-        doc = ass.parse(f)
+        with open(fname, 'r') as f:
+            doc = ass.parse(f)
 
-    dml = []
-    for evt in doc.events:
-        dm = DanMu()
-        dm.createByAss(evt, doc.play_res_x, doc.play_res_y)
-        dml.append(dm)
+        dml = []
+        for evt in doc.events:
+            dm = DanMu()
+            dm.createByAss(evt, doc.play_res_x, doc.play_res_y)
+            dml.append(dm)
 
-    return doc.styles, dml
+        return doc.styles, dml
+    
+    elif str(fname).endswith(".xml"):
+        tmpfile = fname + "_tmp.ass"
+        print('请自行转换')
+        raise
 
 
-readAss('dm.ass')
+#readAss('dm.ass')

@@ -1,3 +1,7 @@
+import sys
+if hasattr(sys, 'frozen'):
+    os.environ['PATH'] = sys._MEIPASS + ";" + os.environ['PATH']
+    
 from PyQt5.QtWidgets import (QApplication, QWidget, QLabel,
  QFileDialog, QDesktopWidget, QVBoxLayout)
 from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve, QObject, QTimer, pyqtSignal
@@ -46,7 +50,7 @@ class App(QWidget):
     def openFileNameDialog(self):
         options = QFileDialog.Options()
         #options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*);;Ass Files (*.ass)", options=options)
+        fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","Ass Files (*.ass);; Xml Files (*.xml);; All Files (*.*)", options=options)
         return fileName
 
     def sendOne(self, danmu):
