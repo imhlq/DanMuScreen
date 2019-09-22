@@ -5,3 +5,4 @@ resource/
 build/
 dist/
 *.exe
+*.spec

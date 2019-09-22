@@ -3,7 +3,7 @@ if hasattr(sys, 'frozen'):
     os.environ['PATH'] = sys._MEIPASS + ";" + os.environ['PATH']
     
 from PyQt5.QtWidgets import (QApplication, QWidget, QLabel,
- QFileDialog, QDesktopWidget, QVBoxLayout)
+ QFileDialog, QDesktopWidget, QVBoxLayout, QInputDialog)
 from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve, QObject, QTimer, pyqtSignal
 from PyQt5.QtGui import QFont, QFontMetrics
 import time, threading
@@ -104,7 +104,11 @@ class App(QWidget):
             self.sendOne(self.DanmuList[self.currentDanMuID])
             self.currentDanMuID += 1
             waitTime = self.DanmuList[self.currentDanMuID].start
-            print(self.currentDanMuID, waitTime)
+            # Output logging
+            hours, rem = divmod(waitTime, 3600)
+            minutes, seconds = divmod(rem, 60)
+            print(self.currentDanMuID, ("{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)))
+
 
 
     def keyPressEvent(self, event):
@@ -126,8 +130,10 @@ class App(QWidget):
                 self.currentDanMuID += 5
 
         elif event.key() == Qt.Key_Space:
-            self.currentDanMuID = 4290
-            self.shiftTime = self.DanmuList[self.currentDanMuID].start
+            i, okpressed = QInputDialog.getInt(self, "Please input progress", "percentage:", 0, 0, 100, 1)
+            if okpressed:
+                self.currentDanMuID = int(len(self.DanmuList) * (i / 100))
+                self.shiftTime = self.DanmuList[self.currentDanMuID].start
 
 if __name__ == "__main__":
     app = QApplication([])

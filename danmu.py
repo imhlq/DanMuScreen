@@ -67,7 +67,7 @@ class DanMu:
 def readAss(fname):
     if str(fname).endswith('.ass'):
 
-        with open(fname, 'r') as f:
+        with open(fname, 'r', encoding='utf-8') as f:
             doc = ass.parse(f)
 
         dml = []

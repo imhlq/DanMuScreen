@@ -38,9 +38,9 @@ XML文件将在未来版本支持。~（若有需求）~
 
 1. 下载弹幕
 
-2. 运行`Python render.py`
+2. 下载[最新版本](https://github.com/imhlq/Danmu-project/releases)
 
-3. 加载弹幕文件
+3. 打开并加载弹幕文件
 
 4. 享受视频与弹幕
 
