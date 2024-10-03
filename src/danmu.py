@@ -1,4 +1,3 @@
-import ass
 import re
 
 class DanMu:
@@ -27,7 +26,7 @@ class DanMu:
         instance.end = evt.end.total_seconds()
 
         # Style
-        color_match = re.search(r'\\c&H([0-9A-Fa-f]{6})&', evt.text)
+        color_match = re.search(r'\\c&H([0-9A-Fa-f]{6})&?', evt.text)
         if color_match:
             instance.color = cls.color_format(color_match.group(1))
         else:
@@ -50,7 +49,9 @@ class DanMu:
             instance.type = 2 if float(pos[1]) < play_res_y * 0.5 else 3  # Fixed Top or Bottom
         else:
             raise ValueError(f'Undefined Style: {evt.style}')
-
+        
+        print(evt, color_match)
+        
         return instance
 
     @staticmethod
@@ -58,20 +59,3 @@ class DanMu:
         # Convert ASS color code to RGBA
         bb, gg, rr = hex_color[0:2], hex_color[2:4], hex_color[4:6]
         return f'rgba({int(rr, 16)}, {int(gg, 16)}, {int(bb, 16)}, 0.8)'
-
-
-def read_ass(filename):
-    if filename.endswith('.ass'):
-        with open(filename, 'r', encoding='utf-8-sig') as f:
-            doc = ass.parse(f)
-
-        danmu_list = [
-            DanMu.create_by_ass(evt, doc.play_res_x, doc.play_res_y)
-            for evt in doc.events
-        ]
-
-        return doc.styles, danmu_list
-    elif filename.endswith('.xml'):
-        raise NotImplementedError('Conversion from XML to ASS is not implemented.')
-    else:
-        raise ValueError(f'Unsupported file format: {filename}')

@@ -1,20 +1,33 @@
-import os
-import sys
+import os, sys
+import time
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QFileDialog, QInputDialog, QSystemTrayIcon, QMenu
+    QApplication, QMainWindow, QLabel, QFileDialog, QInputDialog, QSystemTrayIcon, QMenu,
 )
 from PySide6.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve, QTimer
 from PySide6.QtGui import QFont, QFontMetrics, QIcon, QAction
-import time
-import danmu  # Ensure danmu.py is in the same directory or properly installed
+import parser
+import settings
 
+
+class DanMuLabel(QLabel):
+    pass
 
 class App(QMainWindow):
     def __init__(self):
         super().__init__()
         self.title = 'DanMu Screen'
         self.animations = []
+        
+        self.init_config()
         self.init_ui()
+
+    def init_config(self):
+        self.config = settings.DanMuConfig()
+        
+        # Initialize playback variables
+        self.shift_time = 0  # in seconds
+        self.start_time = time.time()
+        self.current_danmu_id = 0
 
     def init_ui(self):
         # Set up the main window
@@ -27,21 +40,23 @@ class App(QMainWindow):
         self.setFixedSize(self.size())
 
         # Read ASS File
+        self.open_file()
+
+    def open_file(self):
         fname = self.open_file_dialog()
-        if not fname:
-            sys.exit()
-        self.style_list, self.danmu_list = danmu.read_ass(fname)
-        print(f'Total DanMu loaded: {len(self.danmu_list)}')
+        if fname:
+            self.style_list, self.danmu_list = parser.read_ass(fname)
+            self.danmu_start_times = [danmu.start for danmu in self.danmu_list]
+            self.total_time = max(self.danmu_start_times)
 
-        # Initialize playback variables
-        self.shift_time = 0  # in seconds
-        self.start_time = time.time()
-        self.current_danmu_id = 0
-
-        # Timer setup
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.tick)
-        self.timer.start(50)  # Tick every 50 milliseconds
+            print(f'Total DanMu loaded: {len(self.danmu_list)}')
+            
+            # Timer setup
+            self.timer = QTimer(self)
+            self.timer.timeout.connect(self.tick)
+            self.timer.start(50)  # Tick every 50 milliseconds
+        
+            self.init_config()
 
     def open_file_dialog(self):
         options = QFileDialog.Options()
@@ -56,10 +71,11 @@ class App(QMainWindow):
         TOP_MARGIN = -50
         IN_MARGIN = 0.7
 
-        duration = int((danmu_item.end - danmu_item.start) * 1000)  # Duration in milliseconds
+        duration = int((danmu_item.end - danmu_item.start) * 1000 / self.config.speed_multiplier)  # Duration in milliseconds
 
         # Font metrics
-        font = QFont(danmu_item.fontname, danmu_item.fontsize)
+        font_size = danmu_item.fontsize * self.config.font_size_multiplier
+        font = QFont(danmu_item.fontname, font_size)
         font_metrics = QFontMetrics(font)
         text_width = font_metrics.horizontalAdvance(danmu_item.text)
         text_height = font_metrics.height()
@@ -76,10 +92,10 @@ class App(QMainWindow):
             end_y = danmu_item.end_y * self.screen_geometry.height()
 
         # Create label
-        label = QLabel(danmu_item.text, self)
+        label = DanMuLabel(danmu_item.text, self)
         label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         label.setStyleSheet(
-            f"font-family: {danmu_item.fontname}; font-size: {danmu_item.fontsize}pt; color: {danmu_item.color};"
+            f"font-family: {danmu_item.fontname}; font-size: {font_size}pt; color: {danmu_item.color};"
         )
         label.show()
 
@@ -92,7 +108,12 @@ class App(QMainWindow):
         anim.setStartValue(QPoint(*start_pos))
         anim.setEndValue(QPoint(*end_pos))
         anim.setEasingCurve(QEasingCurve.Linear)
-        anim.finished.connect(label.deleteLater)
+        
+        def on_finished():
+            label.deleteLater()
+            self.animations.remove(anim)
+            
+        anim.finished.connect(on_finished)
         anim.start()
         self.animations.append(anim)  # Keep reference to prevent garbage collection
 
@@ -114,7 +135,7 @@ class App(QMainWindow):
             # Rewind by 2 seconds
             self.shift_time -= 2
             self.update_current_danmu_id()
-            self.clear_labels()
+            self.clear_DanMu()
         elif event.text() == '.':
             # Fast-forward by 2 seconds
             self.shift_time += 2
@@ -127,7 +148,13 @@ class App(QMainWindow):
             if ok:
                 self.current_danmu_id = int(len(self.danmu_list) * (percentage / 100))
                 self.shift_time = self.danmu_list[self.current_danmu_id].start - (time.time() - self.start_time)
-                self.clear_labels()
+                self.clear_DanMu()
+    
+    def get_current_time(self):
+        return self.danmu_list[self.current_danmu_id].start
+
+    def get_total_time(self):
+        return self.total_time
 
     def update_current_danmu_id(self):
         # Update current_danmu_id based on the new shift_time
@@ -137,27 +164,58 @@ class App(QMainWindow):
             len(self.danmu_list)
         )
 
-    def clear_labels(self):
+    def clear_DanMu(self):
         # Remove all labels and animations
-        for widget in self.findChildren(QLabel):
-            widget.deleteLater()
+        for anim in self.animations:
+            anim.stop()
         self.animations.clear()
-
-
+        for widget in self.findChildren(DanMuLabel):
+            widget.deleteLater()
+    
+    def rewind(self, seconds=2):
+        self.shift_time -= seconds
+        self.update_current_danmu_id()
+        self.clear_DanMu()
+    
+    def fast_forward(self, seconds=2):
+        self.shift_time += seconds
+        self.update_current_danmu_id()
+        self.clear_DanMu()
+        
+    def play_pause(self):
+        if self.timer.isActive():
+            self.timer.stop()
+        else:
+            self.timer.start()
+        
+    def show_settings_dialog(self):
+        settings.settings_dialog(self)
+    
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-
-    # System Tray Icon (Optional)
+    app.setQuitOnLastWindowClosed(False)
+    
+    ex = App()
+    ex.show()
+    
+    # System Tray Icon
     icon = QIcon("./icons.ico")
     tray = QSystemTrayIcon()
     tray.setIcon(icon)
     tray.setVisible(True)
+    ex.setWindowIcon(icon)
+    
     menu = QMenu()
+    open_action = QAction("Open")
+    open_action.triggered.connect(ex.open_file)
+    settings_action = QAction("Settings")
+    settings_action.triggered.connect(ex.show_settings_dialog)
     quit_action = QAction("Quit")
     quit_action.triggered.connect(app.quit)
+    menu.addAction(open_action)
+    menu.addAction(settings_action)
     menu.addAction(quit_action)
+    
     tray.setContextMenu(menu)
-
-    ex = App()
-    ex.show()
+    
     app.exec()
