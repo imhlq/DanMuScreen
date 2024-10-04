@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QLabel, QSpinBox, QTimeEdit,
     QDialog, QVBoxLayout, QHBoxLayout, QDoubleSpinBox, QDialogButtonBox, QPushButton, QSlider, QTabWidget, QWidget
 )
-from PySide6.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve, QTimer, QTime
+from PySide6.QtCore import Qt
 
 
 class DanMuConfig:
