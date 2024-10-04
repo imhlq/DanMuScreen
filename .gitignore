@@ -4,5 +4,6 @@ __pycache__/
 resource/
 build/
 dist/
+examples/
 *.exe
 *.spec
