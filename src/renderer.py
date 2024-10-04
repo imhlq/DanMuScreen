@@ -205,19 +205,23 @@ class DanMuMachine():
     def rewind(self, seconds=2):
         self.shift_time -= seconds
         self.update_current_danmu_id()
-        self.clear_DanMu()
+        self.clear_danmu()
     
     def fast_forward(self, seconds=2):
         self.shift_time += seconds
         self.update_current_danmu_id()
-        self.clear_DanMu()
+        self.clear_danmu()
         
     def play_pause(self):
         if self.timer.isActive():
             self.timer.stop()
         else:
             self.timer.start()
-
+        
+    def jump_to_percentage(self, percentage):
+        self.current_danmu_id = int(len(self.danmu_list) * (percentage / 100))
+        self.shift_time = self.danmu_list[self.current_danmu_id].start - (time.time() - self.start_time)
+        self.clear_danmu()
 
     def update_current_danmu_id(self):
         # Update current_danmu_id based on the new shift_time
@@ -233,7 +237,7 @@ class DanMuMachine():
             anim.stop()
         self.animation_pool.clear()
         for label in self.label_pool:
-            label.hide()
+            label.deleteLater()
         self.label_pool.clear()
         self.scene.clear()
     

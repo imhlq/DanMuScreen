@@ -17,8 +17,9 @@ def settings_dialog(window: QMainWindow):
     dialog = QDialog(window)
     dialog.setWindowTitle("Settings")
     dialog.setWindowModality(Qt.ApplicationModal)
-    
     dialog.resize(400, 300)
+    
+    danmu_machine = window.danmu_machine
 
     # Create tabs
     tabs = QTabWidget()
@@ -117,7 +118,8 @@ def settings_dialog(window: QMainWindow):
     
 
     def on_progress_changed(value):
-        window.current_danmu_id = int(len(window.danmu_list) * (value / 100))
+        danmu_machine.jump_to_percentage(value)
+        danmu_machine.current_danmu_id = int(len(window.danmu_list) * (value / 100))
         window.shift_time = window.danmu_list[window.current_danmu_id].start - (time.time() - window.start_time)
         window.update_current_danmu_id()
         window.clear_DanMu()
