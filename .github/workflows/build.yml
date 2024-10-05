@@ -33,7 +33,7 @@ jobs:
       - name: Upload Windows Executable
         uses: actions/upload-artifact@v3
         with:
-          name: DanMuScreen-Windows.exe
+          name: DanMuScreen-Windows
           path: dist/DanMuScreen.exe
     
   # Job for building on macOS
@@ -62,7 +62,7 @@ jobs:
       - name: Upload macOS Executable
         uses: actions/upload-artifact@v3
         with:
-          name: DanMuScreen-macOS.app
+          name: DanMuScreen-macOS
           path: dist/DanMuScreen.app
 
   # Job for building on Linux
@@ -111,7 +111,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: DanMuScreen-macOS
-          
+      
+      - name: List Directory
+        run: |
+          tree -L 2
+
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
