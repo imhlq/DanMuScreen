@@ -64,7 +64,7 @@ python src/main.py
 2. 打包
 
 ```bash
-pyinstaller --onefile --name="YourAppName" --icon=icons.ico src/main.py
+pyinstaller --name "DanMuScreen" --onefile --icon=icons.ico src/main.py --noconsole --add-data="icons.ico:."
 pyinstaller YourAppName.spec
 ```
 

@@ -75,6 +75,16 @@ class App(QMainWindow):
         settings.settings_dialog(self)
 
 
+def resource_path(relative_path):
+    """ Get the absolute path to resource, works for both development and PyInstaller environments """
+    try:
+        # PyInstaller creates a temporary folder and stores the path in _MEIPASS
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 def main():
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
@@ -83,7 +93,7 @@ def main():
     ex.show()
     
     # System Tray Icon
-    icon = QIcon("./icons.ico")
+    icon = QIcon(resource_path("icons.ico"))
     tray = QSystemTrayIcon()
     tray.setIcon(icon)
     tray.setVisible(True)
