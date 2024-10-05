@@ -1,4 +1,3 @@
-import time
 from PySide6.QtWidgets import (
     QMainWindow, QLabel, QSpinBox, QTimeEdit,
     QDialog, QVBoxLayout, QHBoxLayout, QDoubleSpinBox, QDialogButtonBox, QPushButton, QSlider, QTabWidget, QWidget
