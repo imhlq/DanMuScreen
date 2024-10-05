@@ -126,4 +126,4 @@ jobs:
           files: |
               DanMuScreen
               DanMuScreen.exe
-              DanMuScreen.zip
+              DanMuScreen-macOS.zip
