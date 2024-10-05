@@ -9,6 +9,7 @@ from parser import read_xml
 from danmu import DanMu, DanMuPool
 import heapq
 import random
+from settings import DanMuConfig
 
 
 class DanMuLabel(QGraphicsTextItem):
@@ -32,7 +33,7 @@ class DanMuMachine():
         self.view.setScene(self.scene)
         self.view.setStyleSheet("background: transparent; border: none;")
         self.view.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
-        self.max_danmu_count = 200
+        
         self.n_workers: int = n_workers
         self.current_index = 0
         self.timer = None
@@ -40,10 +41,8 @@ class DanMuMachine():
         self.parent.setCentralWidget(self.view)
         self.scene.setSceneRect(0, 0, self.screen_geometry[0], self.screen_geometry[1])
         
+        self.config = DanMuConfig()
         self.row_height = 25
-        
-        self.speed_multiplier = 1.0
-        self.font_size_multiplier = 1.0
         
         # Overlapping management
         self.max_scroll_rows = min(self.screen_geometry[1] // self.row_height - 1, 50)
@@ -63,20 +62,29 @@ class DanMuMachine():
         if not self.timer:
             self.timer = QTimer(self.parent)
         self.timer.timeout.connect(self.tick)
-        self.timer.start(26)  # ~30 fps
+        self.timer.start(100)  # ~30 fps
     
     def tick(self):
         now = time.time()
         elapsed = now - self.start_time + self.shift_time
 
         # Send DanMus that are due
+        pending_danmus = []
         while (
             self.current_danmu_id < len(self.danmu_pool) and
             elapsed >= self.danmu_pool.danmu_list[self.current_danmu_id].start_time
         ):
-            self.send_one(self.danmu_pool.danmu_list[self.current_danmu_id], now)
+            pending_danmus.append(self.danmu_pool.danmu_list[self.current_danmu_id])
             self.current_danmu_id += 1
-        
+            
+        self.send_batch(pending_danmus, now)
+    
+    
+    def send_batch(self, danmu_list, current_time):
+        for danmu in danmu_list[:50]:
+            self.send_one(danmu, current_time)
+    
+    
     def calculate_initial_position(
         self, danmu, screen_width, screen_height, text_width, text_height, current_time, duration_in_seconds
     ):
@@ -147,17 +155,15 @@ class DanMuMachine():
         return label
     
     def send_one(self, danmu_item: DanMu, current_time):
-        acceptance_prob = 2.0 - (self.active_danmus / self.max_danmu_count)
-        # print(f"{self.active_danmus} ({acceptance_prob})")
+        acceptance_prob = 2.0 - (self.active_danmus / self.config.max_danmu_count)
         if random.random() > acceptance_prob:
-            return # soft reject
-            
+            return  # Soft reject, skip to next danmu
         duration = int(
-            (danmu_item.end_time - danmu_item.start_time) * 1000 / self.speed_multiplier
+            (danmu_item.end_time - danmu_item.start_time) * 1000 / self.config.speed_multiplier
         )  # Duration in milliseconds
         duration_in_seconds = duration / 1000.0
         # Font metrics
-        font_size = int(danmu_item.fontsize * self.font_size_multiplier)
+        font_size = int(danmu_item.fontsize * self.config.font_size_multiplier)
         font_metrics = self.get_font_metrics(danmu_item.fontname, font_size)
         text_width = font_metrics.horizontalAdvance(danmu_item.text)
         text_height = font_metrics.height()
@@ -202,6 +208,13 @@ class DanMuMachine():
         anim.start()
         self.active_danmus += 1
 
+    def get_current_time(self):
+        now = time.time()
+        return now - self.start_time + self.shift_time
+
+    def get_total_time(self):
+        return self.danmu_pool.danmu_list[-1].end_time
+
     def rewind(self, seconds=2):
         self.shift_time -= seconds
         self.update_current_danmu_id()
@@ -219,16 +232,16 @@ class DanMuMachine():
             self.timer.start()
         
     def jump_to_percentage(self, percentage):
-        self.current_danmu_id = int(len(self.danmu_list) * (percentage / 100))
-        self.shift_time = self.danmu_list[self.current_danmu_id].start - (time.time() - self.start_time)
+        self.current_danmu_id = int(len(self.danmu_pool.danmu_list) * (percentage / 100))
+        self.shift_time = self.danmu_pool.danmu_list[self.current_danmu_id].start_time - (time.time() - self.start_time)
         self.clear_danmu()
 
     def update_current_danmu_id(self):
         # Update current_danmu_id based on the new shift_time
         elapsed = time.time() - self.start_time + self.shift_time
         self.current_danmu_id = next(
-            (i for i, danmu in enumerate(self.danmu_list) if danmu.start >= elapsed),
-            len(self.danmu_list)
+            (i for i, danmu in enumerate(self.danmu_pool.danmu_list) if danmu.start_time >= elapsed),
+            len(self.danmu_pool.danmu_list)
         )
 
     def clear_danmu(self):

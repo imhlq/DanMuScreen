@@ -84,15 +84,15 @@ def create_by_ass(evt, play_res_x, play_res_y):
     instance.text = evt.text.partition('}')[2]
 
     # Time
-    instance.start = evt.start.total_seconds()
-    instance.end = evt.end.total_seconds()
+    instance.start_time = evt.start.total_seconds()
+    instance.end_time = evt.end.total_seconds()
 
     # Style
     color_match = re.search(r'\\c&H([0-9A-Fa-f]{6})&?', evt.text)
     if color_match:
         instance.color = color_format(color_match.group(1))
     else:
-        instance.color = 'rgba(255, 255, 255, 0.8)'
+        instance.color = (255, 255, 255, 0.8*255)
 
     # Position and Type
     if evt.style == 'R2L':
@@ -101,14 +101,14 @@ def create_by_ass(evt, play_res_x, play_res_y):
         instance.start_y = float(pos[1]) / play_res_y
         instance.end_x = float(pos[2]) / play_res_x
         instance.end_y = float(pos[3]) / play_res_y
-        instance.type = 1  # Scrolling
+        instance.type = 'R2L'  # Scrolling
     elif evt.style == 'Fix':
         pos = re.findall(r"([-]?[0-9]+(?:\.[0-9]*)?)", evt.text)[0:2]
         instance.start_x = float(pos[0]) / play_res_x
         instance.start_y = float(pos[1]) / play_res_y
         instance.end_x = instance.start_x
         instance.end_y = instance.start_y
-        instance.type = 2 if float(pos[1]) < play_res_y * 0.5 else 3  # Fixed Top or Bottom
+        instance.type = 'TOP' if float(pos[1]) < play_res_y * 0.5 else 'BOTTOM'  # Fixed Top or Bottom
     else:
         raise ValueError(f'Undefined Style: {evt.style}')
     

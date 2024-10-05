@@ -30,7 +30,6 @@ class App(QMainWindow):
         self.init_ui()
         
         self.danmu_machine = DanMuMachine(self)
-        self.config = settings.DanMuConfig()
         
         self.open_file()
 
@@ -70,24 +69,13 @@ class App(QMainWindow):
             self.danmu_machine.update_current_danmu_id()
             
         elif event.key() == Qt.Key_Space:
-            # Jump to a percentage of the video
-            percentage, ok = QInputDialog.getInt(
-                self, "Please input progress", "Percentage:", 0, 0, 100, 1
-            )
-            if ok:
-                self.danmu_machine.current_danmu_id = int(len(self.danmu_machine.danmu_list) * (percentage / 100))
-                self.danmu_machine.shift_time = self.danmu_list[self.current_danmu_id].start - (time.time() - self.start_time)
-                self.danmu_machine.clear_danmu()
+            self.show_settings_dialog()
     
-        
     def show_settings_dialog(self):
         settings.settings_dialog(self)
-    
-if __name__ == "__main__":
-    # profiler = cProfile.Profile()
-    # profiler.enable()
 
-    # GUI
+
+def main():
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     
@@ -116,9 +104,5 @@ if __name__ == "__main__":
     
     app.exec()
 
-    # profiler.disable()
-    # s = io.StringIO()
-    # sortby = 'cumulative'
-    # ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
-    # ps.print_stats()
-    # print(s.getvalue())
+if __name__ == "__main__":
+    main()
